@@ -18,6 +18,7 @@ function job({
   stopAt,
   branch,
   subject,
+  authorName,
 }) {
   return {
     build_num: number,
@@ -27,6 +28,7 @@ function job({
     stop_time: stopAt ?? null,
     branch: branch ?? `pull/${number}/head`,
     subject: subject ?? `Change for ${number}`,
+    author_name: authorName ?? `Author ${number}`,
     vcs_revision: String(number).padStart(40, "0"),
     workflows: {
       workflow_id: workflow,
@@ -70,6 +72,42 @@ test("extracts PR numbers from CircleCI pull branches", () => {
   assert.equal(queueInternals.parsePrNumber("pull/7586/head"), 7586);
   assert.equal(queueInternals.parsePrNumber("pull/7586"), 7586);
   assert.equal(queueInternals.parsePrNumber("develop"), null);
+});
+
+test("keeps commit metadata distinct from GitHub PR metadata", () => {
+  const builds = completedWorkflow({
+    workflow: "metadata",
+    base: 700,
+    prepStart: "2026-07-31T03:00:00Z",
+    prepStop: "2026-07-31T03:10:00Z",
+    shellStart: "2026-07-31T03:10:00Z",
+    shellStop: "2026-07-31T03:40:00Z",
+  });
+  builds[1].subject = "Fix the latest edge case";
+  builds[1].author_name = "Commit Author";
+
+  const snapshot = buildQueueSnapshot(builds, { now: NOW });
+
+  assert.equal(snapshot.recent[0].prTitle, null);
+  assert.equal(snapshot.recent[0].commitMessage, "Fix the latest edge case");
+  assert.equal(snapshot.recent[0].commitAuthorName, "Commit Author");
+});
+
+test("returns up to 24 recently completed shell workflows", () => {
+  const builds = Array.from({ length: 30 }, (_, index) =>
+    completedWorkflow({
+      workflow: `history-${index}`,
+      base: 1_000 + index * 2,
+      prepStart: `2026-07-30T${String(index % 24).padStart(2, "0")}:00:00Z`,
+      prepStop: `2026-07-30T${String(index % 24).padStart(2, "0")}:10:00Z`,
+      shellStart: `2026-07-30T${String(index % 24).padStart(2, "0")}:10:00Z`,
+      shellStop: `2026-07-30T${String(index % 24).padStart(2, "0")}:40:00Z`,
+    }),
+  ).flat();
+
+  const snapshot = buildQueueSnapshot(builds, { now: NOW });
+
+  assert.equal(snapshot.recent.length, 24);
 });
 
 test("orders ready preparation tasks before the shell tasks they release", () => {

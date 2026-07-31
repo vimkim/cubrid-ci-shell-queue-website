@@ -4,7 +4,7 @@ const DEFAULT_API =
 export async function fetchRecentBuilds({
   fetchImpl = fetch,
   apiUrl = DEFAULT_API,
-  pages = 3,
+  pages = 10,
   pageSize = 100,
   includeRunning = true,
   signal,
@@ -72,10 +72,11 @@ export function createQueueService({
     if (!refreshPromise) {
       refreshPromise = Promise.resolve()
         .then(loadBuilds)
-        .then((builds) => {
+        .then(async (builds) => {
           const generatedAt = now();
+          const value = await buildSnapshot(builds, { now: generatedAt });
           cached = {
-            value: buildSnapshot(builds, { now: generatedAt }),
+            value,
             expiresAt: generatedAt.getTime() + cacheTtlMs,
           };
           return cached.value;

@@ -120,6 +120,36 @@ function prAnchor(entry, className = "") {
   return `<a class="${className}" href="${safeUrl(entry.prUrl)}" target="_blank" rel="noreferrer">${label}</a>`;
 }
 
+function authorAnchor(entry, className = "entry-author") {
+  if (entry.githubAuthorLogin) {
+    const label = `@${escapeHtml(entry.githubAuthorLogin)}`;
+    if (entry.githubAuthorUrl) {
+      return `<a class="${className}" href="${safeUrl(entry.githubAuthorUrl)}" target="_blank" rel="noreferrer">${label}</a>`;
+    }
+    return `<span class="${className}">${label}</span>`;
+  }
+
+  if (entry.commitAuthorName) {
+    return `<span class="${className}" title="Commit author">${escapeHtml(entry.commitAuthorName)}</span>`;
+  }
+  return "";
+}
+
+function entryTitle(entry) {
+  return entry.prTitle || (entry.prNumber ? "PR title unavailable" : prLabel(entry));
+}
+
+function entrySearchValues(entry) {
+  return [
+    entry.prNumber,
+    entry.branch,
+    entry.prTitle,
+    entry.commitMessage,
+    entry.githubAuthorLogin,
+    entry.commitAuthorName,
+  ].filter(Boolean);
+}
+
 function circleLink(entry) {
   if (!entry.circleciUrl) return "";
   return `<a href="${safeUrl(entry.circleciUrl)}" target="_blank" rel="noreferrer" aria-label="Open ${escapeHtml(prLabel(entry))} in CircleCI">CircleCI ↗</a>`;
@@ -202,10 +232,12 @@ function renderRunning(data) {
           <div>
             <div class="job-heading">
               ${prAnchor(entry)}
+              ${authorAnchor(entry)}
               <span class="status-pill">● Running</span>
               <span class="phase-pill ${phase.className}">${escapeHtml(phase.label)}</span>
             </div>
-            <p class="job-title" title="${escapeHtml(entry.title)}">${escapeHtml(entry.title)}</p>
+            <p class="job-title" title="${escapeHtml(entryTitle(entry))}">${escapeHtml(entryTitle(entry))}</p>
+            <p class="commit-line" title="${escapeHtml(entry.commitMessage)}"><span>Latest commit</span>${escapeHtml(entry.commitMessage)}</p>
             <div class="progress-track" aria-label="Estimated job progress">
               <div class="progress-value" style="width:${progress.toFixed(1)}%"></div>
             </div>
@@ -229,20 +261,23 @@ function queueRow(entry, search) {
   const phase = phaseInfo(entry.phase);
   const matches =
     search &&
-    [entry.prNumber, entry.branch, entry.title]
-      .filter(Boolean)
+    entrySearchValues(entry)
       .some((value) =>
         String(value).toLowerCase().includes(search.toLowerCase()),
       );
 
   return `
     <tr data-searchable="${escapeHtml(
-      [entry.prNumber, entry.branch, entry.title].filter(Boolean).join(" "),
+      entrySearchValues(entry).join(" "),
     )}" class="${matches ? "is-match" : ""}">
       <td class="order-cell"><span class="order-number">${entry.position}</span></td>
       <td class="pr-cell">
-        ${prAnchor(entry, "pr-link")}
-        <span class="pr-title" title="${escapeHtml(entry.title)}">${escapeHtml(entry.title)}</span>
+        <span class="entry-heading">
+          ${prAnchor(entry, "pr-link")}
+          ${authorAnchor(entry)}
+        </span>
+        <span class="pr-title" title="${escapeHtml(entryTitle(entry))}">${escapeHtml(entryTitle(entry))}</span>
+        <span class="commit-line" title="${escapeHtml(entry.commitMessage)}"><span>Latest commit</span>${escapeHtml(entry.commitMessage)}</span>
       </td>
       <td><span class="phase-pill ${phase.className}">${escapeHtml(phase.label)}</span></td>
       <td class="time-cell">
@@ -261,8 +296,7 @@ function mobileQueueCard(entry, search) {
   const phase = phaseInfo(entry.phase);
   const matches =
     search &&
-    [entry.prNumber, entry.branch, entry.title]
-      .filter(Boolean)
+    entrySearchValues(entry)
       .some((value) =>
         String(value).toLowerCase().includes(search.toLowerCase()),
       );
@@ -273,10 +307,12 @@ function mobileQueueCard(entry, search) {
         <span>
           <span class="order-number">${entry.position}</span>
           ${prAnchor(entry, "pr-link")}
+          ${authorAnchor(entry)}
         </span>
         <span class="phase-pill ${phase.className}">${escapeHtml(phase.label)}</span>
       </div>
-      <p class="mobile-queue-title">${escapeHtml(entry.title)}</p>
+      <p class="mobile-queue-title">${escapeHtml(entryTitle(entry))}</p>
+      <p class="commit-line" title="${escapeHtml(entry.commitMessage)}"><span>Latest commit</span>${escapeHtml(entry.commitMessage)}</p>
       <div class="mobile-queue-times">
         <span class="mobile-time">
           Est. start
@@ -310,8 +346,7 @@ function renderQueue(data) {
 
   if (search) {
     const match = data.queue.find((entry) =>
-      [entry.prNumber, entry.branch, entry.title]
-        .filter(Boolean)
+      entrySearchValues(entry)
         .some((value) =>
           String(value).toLowerCase().includes(search.toLowerCase()),
         ),
@@ -330,13 +365,17 @@ function renderRecent(data) {
   }
 
   elements.recentList.innerHTML = data.recent
-    .slice(0, 6)
     .map(
       (entry) => `
         <div class="compact-item">
-          <div>
-            ${prAnchor(entry)}
-            <span class="compact-meta">${formatTime(entry.finishedAt)} · ${formatDuration(entry.durationSeconds)}</span>
+          <div class="compact-entry">
+            <span class="entry-heading">
+              ${prAnchor(entry)}
+              ${authorAnchor(entry)}
+            </span>
+            <span class="compact-title" title="${escapeHtml(entryTitle(entry))}">${escapeHtml(entryTitle(entry))}</span>
+            <span class="commit-line" title="${escapeHtml(entry.commitMessage)}"><span>Latest commit</span>${escapeHtml(entry.commitMessage)}</span>
+            <span class="compact-meta">${formatDateTime(entry.finishedAt)} · ${formatDuration(entry.durationSeconds)}</span>
           </div>
           <span class="result-pill result-${escapeHtml(entry.status)}">${escapeHtml(entry.status)}</span>
         </div>

@@ -23,6 +23,10 @@ dev:
   @echo "Open http://{{lan_ip}}:{{port}}"
   HOST="{{host}}" PORT="{{port}}" npm run dev
 
+# Print the live queue as JSON; optionally focus on one PR number
+queue pr="":
+  @node queue.mjs {{pr}}
+
 # Run the automated tests
 test:
   npm test
@@ -30,7 +34,11 @@ test:
 # Check JavaScript syntax and run all tests
 check:
   node --check server.mjs
+  node --check queue.mjs
+  node --check src/cli.js
   node --check src/circleci.js
+  node --check src/github.js
+  node --check src/live-queue.js
   node --check src/queue.js
   node --check public/app.js
   npm test

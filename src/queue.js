@@ -16,6 +16,7 @@ const DEFAULT_PREP_SECONDS = 10 * 60;
 const DEFAULT_BUILD_SECONDS = 10 * 60;
 const STALE_RUNNING_SECONDS = 3 * 60 * 60;
 const MINIMUM_REMAINING_SECONDS = 5 * 60;
+const RECENT_HISTORY_LIMIT = 24;
 
 function asDate(value) {
   if (!value) return undefined;
@@ -138,7 +139,9 @@ function entryFromWorkflow(workflow) {
       ? `https://github.com/CUBRID/cubrid/pull/${prNumber}`
       : null,
     branch: job?.branch ?? null,
-    title: job?.subject ?? "(untitled workflow)",
+    prTitle: null,
+    commitMessage: job?.subject ?? "(commit message unavailable)",
+    commitAuthorName: job?.author_name ?? null,
     commit: job?.vcs_revision ?? null,
     requestedAt: iso(workflowRequestedAt(workflow)),
     circleciUrl: job?.build_num
@@ -493,7 +496,7 @@ export function buildQueueSnapshot(builds, { now = new Date() } = {}) {
     },
     running,
     queue,
-    recent: recent.slice(0, 8),
+    recent: recent.slice(0, RECENT_HISTORY_LIMIT),
     anomalies,
     estimateNote:
       "Positions and times are inferred from public workflow status, dependency readiness, and recent median durations. CircleCI does not publish a canonical per-job runner order.",

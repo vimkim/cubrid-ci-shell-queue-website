@@ -4,11 +4,7 @@ import { createServer } from "node:http";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  createQueueService,
-  fetchRecentBuilds,
-} from "./src/circleci.js";
-import { buildQueueSnapshot } from "./src/queue.js";
+import { createLiveQueueService } from "./src/live-queue.js";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const publicDirectory = join(root, "public");
@@ -22,10 +18,7 @@ const contentTypes = new Map([
   [".svg", "image/svg+xml"],
 ]);
 
-const getQueue = createQueueService({
-  loadBuilds: () => fetchRecentBuilds(),
-  buildSnapshot: buildQueueSnapshot,
-});
+const getQueue = createLiveQueueService();
 
 function sendJson(response, statusCode, value) {
   const body = JSON.stringify(value);

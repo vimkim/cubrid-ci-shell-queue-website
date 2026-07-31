@@ -47,15 +47,14 @@
         </div>
 
         <label class="search">
-          <span class="search-label">Find a PR</span>
+          <span class="search-label">Find an entry</span>
           <span class="search-field">
-            <span aria-hidden="true">#</span>
+            <span aria-hidden="true">⌕</span>
             <input
               id="queue-search"
               type="search"
-              inputmode="numeric"
               autocomplete="off"
-              placeholder="7586"
+              placeholder="PR, title, author"
             />
           </span>
         </label>
@@ -66,8 +65,9 @@
         <div>
           <strong>Estimated from CircleCI’s public API</strong>
           <span>
-            No login or token is used. CircleCI does not expose its canonical
-            runner order, so positions can change after retries or cancellations.
+            GitHub’s public API supplies PR titles and authors. CircleCI does not
+            expose its canonical runner order, so positions can change after
+            retries or cancellations.
           </span>
         </div>
       </aside>
@@ -126,7 +126,7 @@
                 <thead>
                   <tr>
                     <th scope="col">Order</th>
-                    <th scope="col">Pull request</th>
+                    <th scope="col">Entry</th>
                     <th scope="col">Current phase</th>
                     <th scope="col">Est. start</th>
                     <th scope="col">Est. finish</th>
