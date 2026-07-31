@@ -9,26 +9,30 @@ publish the self-hosted runner's canonical task order.
 
 ## Run
 
-Requires Node.js 20 or newer.
+Requires Node.js 20 or newer. On the Linux server, run:
 
 ```sh
-npm start
+just start
 ```
 
-Open <http://127.0.0.1:4173>.
+Open <http://192.168.4.2:4173> from another machine on the same network.
 
-The server binds to localhost by default. To expose it on the local network:
+For localhost-only access:
 
 ```sh
-HOST=0.0.0.0 PORT=4173 npm start
+just local
 ```
 
 ## Development
 
 ```sh
-npm run dev
-npm test
+just dev
+just test
+just check
 ```
+
+Run `just` to list the available commands. `HOST`, `PORT`, and `LAN_IP` can be
+overridden as environment variables when needed.
 
 The dashboard refreshes every 30 seconds. The local server caches CircleCI
 responses for 30 seconds and falls back to the last successful snapshot if a
