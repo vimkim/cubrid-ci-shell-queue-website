@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta
+      name="description"
+      content="Estimated queue for the shared CUBRID CircleCI test_shell runner"
+    />
+    <title>CUBRID test_shell queue</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container topbar-inner">
+        <a class="brand" href="/" aria-label="CUBRID test_shell queue home">
+          <span class="terminal-mark" aria-hidden="true">&gt;_</span>
+          <span>
+            <strong>CUBRID</strong>
+            <span class="brand-subtitle">test_shell queue</span>
+          </span>
+        </a>
+
+        <div class="topbar-actions">
+          <span class="live-status" id="live-status">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span id="live-status-text">Connecting</span>
+          </span>
+          <button class="button button-secondary" id="refresh-button" type="button">
+            <span class="refresh-icon" aria-hidden="true">↻</span>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container main">
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Shared runner · cubrid/ramdisk</p>
+          <h1 id="page-title">Where is my shell test?</h1>
+          <p class="intro-copy">
+            Estimated order and timing for <code>download-build</code> and
+            <code>test_shell</code> jobs in CUBRID pull requests.
+          </p>
+        </div>
+
+        <label class="search">
+          <span class="search-label">Find a PR</span>
+          <span class="search-field">
+            <span aria-hidden="true">#</span>
+            <input
+              id="queue-search"
+              type="search"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="7586"
+            />
+          </span>
+        </label>
+      </section>
+
+      <aside class="estimate-notice">
+        <span class="notice-icon" aria-hidden="true">i</span>
+        <div>
+          <strong>Estimated from CircleCI’s public API</strong>
+          <span>
+            No login or token is used. CircleCI does not expose its canonical
+            runner order, so positions can change after retries or cancellations.
+          </span>
+        </div>
+      </aside>
+
+      <section class="summary-grid" aria-label="Queue summary">
+        <article class="summary-card summary-card-primary">
+          <span class="summary-label">Runner</span>
+          <strong class="summary-value summary-value-status" id="runner-status">
+            Loading…
+          </strong>
+          <span class="summary-detail" id="runner-detail">Checking CircleCI</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Waiting</span>
+          <strong class="summary-value" id="waiting-count">—</strong>
+          <span class="summary-detail">shell requests</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Typical run</span>
+          <strong class="summary-value" id="typical-duration">—</strong>
+          <span class="summary-detail" id="duration-sample">recent median</span>
+        </article>
+        <article class="summary-card">
+          <span class="summary-label">Queue clear</span>
+          <strong class="summary-value" id="queue-clear">—</strong>
+          <span class="summary-detail">Asia/Seoul</span>
+        </article>
+      </section>
+
+      <div class="content-grid">
+        <div class="primary-column">
+          <section class="panel running-panel" aria-labelledby="running-title">
+            <div class="panel-header">
+              <div>
+                <p class="section-kicker">Now</p>
+                <h2 id="running-title">Runner activity</h2>
+              </div>
+              <span class="updated-at" id="updated-at">Not updated yet</span>
+            </div>
+            <div id="running-content" class="panel-body">
+              <div class="skeleton skeleton-running" aria-hidden="true"></div>
+            </div>
+          </section>
+
+          <section class="panel queue-panel" aria-labelledby="queue-title">
+            <div class="panel-header">
+              <div>
+                <p class="section-kicker">Next</p>
+                <h2 id="queue-title">Estimated queue</h2>
+              </div>
+              <span class="queue-count-badge" id="queue-count-badge">— jobs</span>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Order</th>
+                    <th scope="col">Pull request</th>
+                    <th scope="col">Current phase</th>
+                    <th scope="col">Est. start</th>
+                    <th scope="col">Est. finish</th>
+                  </tr>
+                </thead>
+                <tbody id="queue-body">
+                  <tr>
+                    <td colspan="5">
+                      <div class="skeleton skeleton-row" aria-hidden="true"></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="mobile-queue" id="mobile-queue"></div>
+            <div class="empty-state" id="queue-empty" hidden>
+              <span class="empty-check" aria-hidden="true">✓</span>
+              <strong>No shell tests are waiting</strong>
+              <span>The shared runner has no pending requests in the public feed.</span>
+            </div>
+          </section>
+        </div>
+
+        <aside class="secondary-column">
+          <section class="panel compact-panel" aria-labelledby="recent-title">
+            <div class="panel-header compact-header">
+              <div>
+                <p class="section-kicker">History</p>
+                <h2 id="recent-title">Recently finished</h2>
+              </div>
+            </div>
+            <div class="compact-list" id="recent-list">
+              <div class="skeleton skeleton-list" aria-hidden="true"></div>
+            </div>
+          </section>
+
+          <section
+            class="panel compact-panel attention-panel"
+            id="attention-panel"
+            aria-labelledby="attention-title"
+            hidden
+          >
+            <div class="panel-header compact-header">
+              <div>
+                <p class="section-kicker section-kicker-warning">Check</p>
+                <h2 id="attention-title">Needs attention</h2>
+              </div>
+            </div>
+            <div class="compact-list" id="attention-list"></div>
+          </section>
+
+          <section class="method-card" aria-labelledby="method-title">
+            <h2 id="method-title">How the ETA works</h2>
+            <ol>
+              <li>Group jobs by CircleCI workflow.</li>
+              <li>Account for <code>download-build</code> before shell.</li>
+              <li>Use recent median job durations.</li>
+            </ol>
+            <a
+              href="https://circleci.com/gh/CUBRID/cubrid"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open CUBRID in CircleCI
+              <span aria-hidden="true">↗</span>
+            </a>
+          </section>
+        </aside>
+      </div>
+
+      <div class="error-banner" id="error-banner" role="alert" hidden>
+        <strong>Could not refresh the queue.</strong>
+        <span id="error-message"></span>
+      </div>
+
+      <p class="screen-reader-only" id="live-announcement" aria-live="polite"></p>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <span>Internal queue aid for CUBRID contributors</span>
+        <span>Auto-refreshes every 30 seconds</span>
+      </div>
+    </footer>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
