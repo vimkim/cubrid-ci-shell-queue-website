@@ -5,6 +5,38 @@ function secondsUntil(value, generatedAt) {
   return Math.max(0, Math.ceil(milliseconds / 1_000));
 }
 
+function timestamp(value) {
+  if (!value) return null;
+  const milliseconds = new Date(value).getTime();
+  if (!Number.isFinite(milliseconds)) return null;
+
+  return {
+    utc: new Date(milliseconds).toISOString(),
+    kst: new Date(milliseconds + 9 * 60 * 60 * 1_000)
+      .toISOString()
+      .replace("Z", "+09:00"),
+    epochSeconds: Math.floor(milliseconds / 1_000),
+  };
+}
+
+const ENTRY_TIMESTAMP_FIELDS = [
+  "requestedAt",
+  "startedAt",
+  "finishedAt",
+  "estimatedPreparationStartAt",
+  "estimatedPreparationFinishAt",
+  "estimatedStartAt",
+  "estimatedFinishAt",
+];
+
+function entryTimestamps(entry) {
+  const output = { ...entry };
+  for (const field of ENTRY_TIMESTAMP_FIELDS) {
+    if (field in output) output[field] = timestamp(output[field]);
+  }
+  return output;
+}
+
 function runningEntry(entry, generatedAt) {
   return {
     ...entry,
@@ -23,12 +55,23 @@ function queuedEntry(entry, generatedAt) {
 }
 
 export function buildCliOutput(snapshot, { prNumber } = {}) {
+  const running = snapshot.running.map((entry) =>
+    runningEntry(entry, snapshot.generatedAt),
+  );
+  const queue = snapshot.queue.map((entry) =>
+    queuedEntry(entry, snapshot.generatedAt),
+  );
   const output = {
     ...snapshot,
-    running: snapshot.running.map((entry) =>
-      runningEntry(entry, snapshot.generatedAt),
-    ),
-    queue: snapshot.queue.map((entry) => queuedEntry(entry, snapshot.generatedAt)),
+    generatedAt: timestamp(snapshot.generatedAt),
+    summary: {
+      ...snapshot.summary,
+      estimatedQueueClearAt: timestamp(snapshot.summary.estimatedQueueClearAt),
+    },
+    running: running.map(entryTimestamps),
+    queue: queue.map(entryTimestamps),
+    recent: snapshot.recent.map(entryTimestamps),
+    anomalies: snapshot.anomalies.map(entryTimestamps),
   };
 
   if (!Number.isFinite(prNumber)) return output;
@@ -64,11 +107,37 @@ export function buildCliOutput(snapshot, { prNumber } = {}) {
   };
 }
 
+export function buildEtaOutput(snapshot, { prNumber } = {}) {
+  if (!Number.isFinite(prNumber)) {
+    throw new Error("A PR number is required for an ETA lookup");
+  }
+
+  const focused = buildCliOutput(snapshot, { prNumber });
+  return {
+    generatedAt: focused.generatedAt,
+    timezone: focused.timezone,
+    prNumber,
+    found: focused.found,
+    state: focused.state,
+    position: focused.entry?.position ?? null,
+    estimatedWaitSeconds: focused.entry?.estimatedWaitSeconds ?? null,
+    estimatedStart: focused.entry?.estimatedStartAt ?? null,
+    estimatedFinish: focused.entry?.estimatedFinishAt ?? null,
+    confidence: focused.entry?.confidence ?? null,
+  };
+}
+
 export function parseCliArguments(arguments_) {
   let prNumber;
+  let etaOnly = false;
 
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index];
+    if (argument === "--eta") {
+      etaOnly = true;
+      continue;
+    }
+
     const value = argument === "--pr" ? arguments_[index + 1] : argument;
     const match = /^(?:--pr=|#)?(\d+)$/.exec(value ?? "");
 
@@ -81,5 +150,5 @@ export function parseCliArguments(arguments_) {
     throw new Error(`Unknown argument: ${argument}`);
   }
 
-  return { prNumber };
+  return { prNumber, etaOnly };
 }

@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --watch server.mjs",
+    "eta": "node queue.mjs --eta",
     "queue": "node queue.mjs",
     "test": "node --test"
   },

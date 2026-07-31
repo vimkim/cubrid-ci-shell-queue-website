@@ -38,8 +38,9 @@ just queue
 ```
 
 Queue entries include `position`, `estimatedStartAt`, `estimatedFinishAt`, and
-the derived `estimatedWaitSeconds`. To return only one PR's current state and
-entry, pass its number:
+the derived `estimatedWaitSeconds`. All CLI timestamps contain explicit `utc`,
+`kst`, and `epochSeconds` representations. To return only one PR's current
+state and entry, pass its number:
 
 ```sh
 just queue 7588
@@ -48,6 +49,18 @@ just queue 7588
 The focused response has a stable `state` of `running`, `queued`, `preparing`,
 `finished`, `attention`, or `not_found`. `npm run queue -- --pr 7588` and
 `node queue.mjs --pr=7588` are equivalent forms.
+
+For a compact response containing only one PR's estimated queue timing, use:
+
+```sh
+just eta 7588
+```
+
+This returns `state`, `position`, `estimatedWaitSeconds`, `estimatedStart`,
+`estimatedFinish`, and estimate `confidence` as JSON. Every timestamp contains
+an explicit UTC value, Korean time with a `+09:00` offset, and Unix epoch
+seconds, so consumers never need to infer a timezone. `npm run eta -- 7588` is
+equivalent.
 
 ## Development
 

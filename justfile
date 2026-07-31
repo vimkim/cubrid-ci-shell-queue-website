@@ -27,6 +27,10 @@ dev:
 queue pr="":
   @node queue.mjs {{pr}}
 
+# Print only one PR's estimated queue timing as JSON
+eta pr:
+  @node queue.mjs --eta "{{pr}}"
+
 # Run the automated tests
 test:
   npm test
