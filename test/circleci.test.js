@@ -83,7 +83,52 @@ test("reports CircleCI HTTP failures", async () => {
           }),
         pages: 1,
         includeRunning: false,
+        retry: { retryDelayMs: 0, sleep: async () => {} },
       }),
     /CircleCI returned 429 Too Many Requests/,
   );
+});
+
+test("recovers when one of the parallel page requests fails transiently", async () => {
+  const failedOnce = new Set();
+  let calls = 0;
+  const fetchImpl = async (url) => {
+    calls += 1;
+    const offset = new URL(url).searchParams.get("offset");
+    if (offset === "300" && !failedOnce.has(offset)) {
+      failedOnce.add(offset);
+      const error = new TypeError("fetch failed");
+      error.cause = Object.assign(new Error("Connect Timeout Error"), {
+        code: "UND_ERR_CONNECT_TIMEOUT",
+      });
+      throw error;
+    }
+    return response([{ build_num: Number(offset ?? 1000) + 1 }]);
+  };
+
+  const builds = await fetchRecentBuilds({
+    fetchImpl,
+    pages: 10,
+    pageSize: 100,
+    retry: { retryDelayMs: 0, sleep: async () => {} },
+  });
+
+  assert.equal(calls, 12);
+  assert.ok(builds.some((build) => build.build_num === 301));
+});
+
+test("limits how many CircleCI requests are in flight at once", async () => {
+  let inFlight = 0;
+  let peak = 0;
+  const fetchImpl = async () => {
+    inFlight += 1;
+    peak = Math.max(peak, inFlight);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    inFlight -= 1;
+    return response([{ build_num: inFlight + 1 }]);
+  };
+
+  await fetchRecentBuilds({ fetchImpl, pages: 10, concurrency: 4 });
+
+  assert.equal(peak, 4);
 });

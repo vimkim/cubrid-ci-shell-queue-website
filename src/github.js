@@ -1,3 +1,5 @@
+import { fetchWithRetry } from "./resilient-fetch.js";
+
 const DEFAULT_API = "https://api.github.com/repos/CUBRID/cubrid/pulls";
 
 function githubHeaders(token) {
@@ -17,6 +19,7 @@ export async function fetchRecentPullRequests({
   pages = 2,
   pageSize = 100,
   token = process.env.GITHUB_TOKEN,
+  retry,
   signal,
 } = {}) {
   const requests = Array.from({ length: pages }, (_, page) => {
@@ -27,10 +30,12 @@ export async function fetchRecentPullRequests({
     url.searchParams.set("per_page", String(pageSize));
     url.searchParams.set("page", String(page + 1));
 
-    return fetchImpl(url, {
-      headers: githubHeaders(token),
-      signal,
-    }).then(async (response) => {
+    return fetchWithRetry(
+      fetchImpl,
+      url,
+      { headers: githubHeaders(token), signal },
+      retry,
+    ).then(async (response) => {
       if (!response.ok) {
         throw new Error(
           `GitHub returned ${response.status} ${response.statusText}`.trim(),

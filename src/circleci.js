@@ -1,3 +1,5 @@
+import { fetchWithRetry, mapWithConcurrency } from "./resilient-fetch.js";
+
 const DEFAULT_API =
   "https://circleci.com/api/v1.1/project/github/CUBRID/cubrid";
 
@@ -7,6 +9,8 @@ export async function fetchRecentBuilds({
   pages = 10,
   pageSize = 100,
   includeRunning = true,
+  concurrency = 4,
+  retry,
   signal,
 } = {}) {
   const urls = Array.from({ length: pages }, (_, page) => {
@@ -23,14 +27,23 @@ export async function fetchRecentBuilds({
     urls.push(runningUrl);
   }
 
-  const requests = urls.map((url) => {
-    return fetchImpl(url, {
-      headers: {
-        accept: "application/json",
-        "user-agent": "cubrid-ci-shell-queue/1.0",
-      },
-      signal,
-    }).then(async (response) => {
+  const pagesOfBuilds = await mapWithConcurrency(
+    urls,
+    concurrency,
+    async (url) => {
+      const response = await fetchWithRetry(
+        fetchImpl,
+        url,
+        {
+          headers: {
+            accept: "application/json",
+            "user-agent": "cubrid-ci-shell-queue/1.0",
+          },
+          signal,
+        },
+        retry,
+      );
+
       if (!response.ok) {
         throw new Error(
           `CircleCI returned ${response.status} ${response.statusText}`.trim(),
@@ -42,10 +55,9 @@ export async function fetchRecentBuilds({
         throw new Error("CircleCI returned an unexpected response");
       }
       return body;
-    });
-  });
+    },
+  );
 
-  const pagesOfBuilds = await Promise.all(requests);
   const buildsByNumber = new Map();
 
   for (const build of pagesOfBuilds.flat()) {

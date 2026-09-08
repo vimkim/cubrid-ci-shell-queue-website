@@ -101,3 +101,26 @@ test("caches GitHub metadata and uses stale data after a refresh failure", async
   assert.equal(first, stale);
   assert.equal(attempts, 2);
 });
+
+test("retries a transient GitHub network failure", async () => {
+  let calls = 0;
+  const pullRequests = await fetchRecentPullRequests({
+    fetchImpl: async () => {
+      calls += 1;
+      if (calls === 1) {
+        const error = new TypeError("fetch failed");
+        error.cause = Object.assign(new Error("getaddrinfo EAI_AGAIN"), {
+          code: "EAI_AGAIN",
+        });
+        throw error;
+      }
+      return response([{ number: 7 }]);
+    },
+    pages: 1,
+    token: "",
+    retry: { retryDelayMs: 0, sleep: async () => {} },
+  });
+
+  assert.equal(calls, 2);
+  assert.equal(pullRequests[0].number, 7);
+});

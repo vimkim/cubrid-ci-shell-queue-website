@@ -22,6 +22,19 @@ just start
 
 Open <http://192.168.4.2:4173> from another machine on the same network.
 
+`just start` only lives as long as its terminal. To keep the site running
+across logouts, crashes, and reboots, install it as a systemd user service:
+
+```sh
+just install-service
+just service-status
+```
+
+Without login lingering, user services stop when the last session ends and
+do not start at boot. Enable lingering once with
+`sudo loginctl enable-linger $USER`. `just uninstall-service` removes the
+service again.
+
 For localhost-only access:
 
 ```sh
@@ -89,3 +102,18 @@ recently finished shell workflows.
 - Uses recent median durations for build preparation and `test_shell`.
 - Excludes jobs that have reported `running` for more than three hours from
   ETA calculations and lists them under **Needs attention**.
+
+## Troubleshooting
+
+**The page shows "Could not refresh the queue. fetch failed"** and the CLI
+prints `fetch failed`. Node's `fetch` reports this when a connection to
+`circleci.com` or `api.github.com` could not be made. On this network the
+usual cause is a dropped DNS reply: glibc waits 5 seconds before retrying a
+lookup, and two drops in a row exceed Node's 10 second connect timeout. The
+clients now retry each request up to three times and fetch at most four
+CircleCI pages at once, so a single stall no longer fails a refresh. If it
+still happens often, check `/etc/resolv.conf`; `options timeout:2 attempts:3`
+shortens the resolver's wait.
+
+**Nothing answers on port 4173.** The server process is not running. Check
+`just service-status`, or start it with `just start`.
